@@ -14,11 +14,12 @@ export default class HintAddCommand extends (Command as any) {
     const model = this.editor.model;
     const doc = model.document;
 
-    this.value = doc.selection.getAttribute();
+    this.value = doc.selection.getAttribute(HINT_MODEL);
 		this.isEnabled = model.schema.checkAttributeInSelection(doc.selection, HINT_MODEL);
   }
 
   execute(href) {
+    debugger
     const model = this.editor.model;
     const selection = model.document.selection;
 

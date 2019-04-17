@@ -11,3 +11,43 @@ $blue: blue;
 html {
   padding: 10px;
 }
+.ck.ck-button {
+  &.edit-hint-icon {
+    background: url(../src/assets/edit.svg) no-repeat center !important;
+  }
+  
+  &.delete-hint-icon {
+    background: url(../src/assets/delete.svg) no-repeat center !important;
+  }
+  &.save-hint-icon {
+    background: url(../src/assets/save.svg) no-repeat center !important;
+  }
+  &.cancel-hint-icon {
+    background: url(../src/assets/cancel.svg) no-repeat center !important;
+  }
+  &:not(.ck-disabled):hover {
+    background-color: #F2F2F2 !important;
+  }
+}
+.ck-hint {
+  border-bottom: 1px dotted #8b8b8b;
+}
+.ck.ck-balloon-panel {
+  & .ck.ck-hint-form {
+    padding: 8px;
+    outline: none;
+    text-align: right;
+    & .ck.ck-labeled-input {
+      margin-bottom: 2px;
+    }
+  }
+
+  & .ck.ck-input-text {
+    box-shadow: none;
+    outline: none;
+    &:focus {
+      border-color: #CB11AB;
+    }
+  }
+}
+

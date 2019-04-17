@@ -10,19 +10,19 @@ import Hint from './plugin/hint';
 
 
 ClassicEditor
-    .create( document.querySelector( '#editor' ), {
-        plugins: [ Essentials, Paragraph, Bold, Italic, Code, Image, Widget, Hint ],
-        toolbar: [ 'bold', 'italic' ],
+    .create(document.querySelector('#editor'), {
+        plugins: [Essentials, Paragraph, Bold, Italic, Code, Image, Widget, Hint],
+        toolbar: ['bold', 'italic', 'addHint'],
         insertComponents: [{
-        title: 'Компонент 1',
-        value: 'Component-1'
+            title: 'Компонент 1',
+            value: 'Component-1'
         }]
-    } )
-    .then( editor => {
-        console.log( 'Editor was initialized kek', editor );
-    } )
-    .catch( error => {
-        console.error( error.stack );
-    } );
+    })
+    .then(editor => {
+        console.log('Editor was initialized kek', editor);
+    })
+    .catch(error => {
+        console.error(error.stack);
+    });
 
 

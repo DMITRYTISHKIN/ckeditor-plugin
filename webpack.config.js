@@ -1,17 +1,17 @@
 'use strict';
 
-const path = require( 'path' );
-const { styles } = require( '@ckeditor/ckeditor5-dev-utils' );
+const path = require('path');
+const { styles } = require('@ckeditor/ckeditor5-dev-utils');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const ExtractTextPlugin = require('extract-text-webpack-plugin');
 
 module.exports = {
     entry: ['./src/app.ts', './src/style.scss'],
     resolve: {
-        extensions: [ '.ts', '.tsx', ".js", ".json"],
+        extensions: ['.ts', '.tsx', ".js", ".json"],
     },
     output: {
-        path: path.resolve( __dirname, 'dist' ),
+        path: path.resolve(__dirname, 'dist'),
         filename: 'bundle.js'
     },
     plugins: [
@@ -30,13 +30,22 @@ module.exports = {
         rules: [
             {
                 test: /\.svg$/,
-                use: [ 'raw-loader' ]
+                exclude: /assets/,
+                use: ['raw-loader']
+            },
+            {
+                test: /\.(png|jpg|gif|svg)$/i,
+                include: /assets/,
+                use: {
+                    loader: 'url-loader',
+                    options: {}
+                }
             },
             {
                 test: /\.scss$/,
                 use: ExtractTextPlugin.extract({
-                  fallback: 'style-loader',
-                  use: ['css-loader', 'sass-loader']
+                    fallback: 'style-loader',
+                    use: ['css-loader', 'resolve-url-loader', 'sass-loader']
                 })
             },
             {
@@ -54,12 +63,12 @@ module.exports = {
                     },
                     {
                         loader: 'postcss-loader',
-                        options: styles.getPostCssConfig( {
+                        options: styles.getPostCssConfig({
                             themeImporter: {
-                                themePath: require.resolve( '@ckeditor/ckeditor5-theme-lark' )
+                                themePath: require.resolve('@ckeditor/ckeditor5-theme-lark')
                             },
                             minify: true
-                        } )
+                        })
                     },
                 ]
             }

@@ -20,7 +20,7 @@ export default class HintEditing extends (Plugin as any) {
     );
 
     editor.conversion.for('editingDowncast').add(
-      downcastAttributeToElement({ model: HINT_MODEL, view: createHintElement })
+      downcastAttributeToElement({ model: HINT_MODEL, view: (title, writer) => createHintElement(title, writer) })
     );
 
     editor.conversion.for('upcast').add(
@@ -28,7 +28,7 @@ export default class HintEditing extends (Plugin as any) {
         view: {
           name: HINT_VIEW,
           attributes: {
-            value: true
+            title: true
           }
         },
         model: {
@@ -70,26 +70,27 @@ export default class HintEditing extends (Plugin as any) {
     });
 
     editor.conversion.for('editingDowncast').add(dispatcher => {
-			dispatcher.on('insert', removeHighlight, { priority: 'highest' });
-			dispatcher.on('remove', removeHighlight, { priority: 'highest' });
-			dispatcher.on('attribute', removeHighlight, { priority: 'highest' });
-			dispatcher.on('selection', removeHighlight, { priority: 'highest' });
+      dispatcher.on('insert', removeHighlight, { priority: 'highest' });
+      dispatcher.on('remove', removeHighlight, { priority: 'highest' });
+      dispatcher.on('attribute', removeHighlight, { priority: 'highest' });
+      dispatcher.on('selection', removeHighlight, { priority: 'highest' });
 
-			function removeHighlight() {
-				view.change((writer) => {
+      function removeHighlight() {
+        view.change((writer) => {
           highlightedHints.forEach((item) => {
             writer.removeClass(HIGHLIGHT_CLASS, item);
           });
           highlightedHints.clear();
-				});
-			}
-		} );
+        });
+      }
+    });
   }
 }
 
-function createHintElement(value, writer) {
-	const hintElement = writer.createAttributeElement(HINT_VIEW, { value }, { priority: 5 });
-	writer.setCustomProperty(HINT_SYMBOL, true, hintElement);
+function createHintElement(title, writer) {
+  const hintElement = writer.createAttributeElement(HINT_VIEW, { title }, { priority: 5 });
+  writer.setCustomProperty('addHint', true, hintElement);
+  writer.addClass('ck-hint', hintElement);
 
-	return hintElement;
+  return hintElement;
 }
