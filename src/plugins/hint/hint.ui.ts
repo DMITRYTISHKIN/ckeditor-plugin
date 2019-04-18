@@ -1,15 +1,14 @@
 import Plugin from '@ckeditor/ckeditor5-core/src/plugin';
 import ContextualBalloon from '@ckeditor/ckeditor5-ui/src/panel/balloon/contextualballoon';
 import ClickObserver from '@ckeditor/ckeditor5-engine/src/view/observer/clickobserver';
-import HintActionsView from './ui/hint-actions.view';
 import HintFormView from './ui/hint-form.view';
 import ButtonView from '@ckeditor/ckeditor5-ui/src/button/buttonview';
 import clickOutsideHandler from '@ckeditor/ckeditor5-ui/src/bindings/clickoutsidehandler';
+import { clearText } from './hint.helper';
 
 const linkKeystroke = 'Ctrl+K';
 
 export default class HintUI extends (Plugin as any) {
-  public actionsView: HintActionsView;
   public formView: HintFormView;
 
   static get requires() {
@@ -24,21 +23,13 @@ export default class HintUI extends (Plugin as any) {
     return this._balloon.hasView(this.formView);
   }
 
-  get _areActionsInPanel() {
-    return this._balloon.hasView(this.actionsView);
-  }
-
-  get _areActionsVisible() {
-    return this._balloon.visibleView === this.actionsView;
-  }
-
   get _isUIInPanel() {
-    return this._isFormInPanel || this._areActionsInPanel;
+    return this._isFormInPanel
   }
 
   get _isUIVisible() {
     const visibleView = this._balloon.visibleView;
-    return visibleView == this.formView || this._areActionsVisible;
+    return visibleView == this.formView;
   }
 
   constructor(editor) {
@@ -50,7 +41,6 @@ export default class HintUI extends (Plugin as any) {
 
     editor.editing.view.addObserver(ClickObserver);
 
-    this.actionsView = this._createActionsView();
     this.formView = this._createFormView();
 
     this._balloon = editor.plugins.get(ContextualBalloon);
@@ -85,7 +75,6 @@ export default class HintUI extends (Plugin as any) {
 
       button.isEnabled = true;
       button.label = t('Hint');
-      // button.icon = linkIcon;
       button.class = 'hint-icon'
       button.keystroke = linkKeystroke;
       button.tooltip = true;
@@ -112,13 +101,13 @@ export default class HintUI extends (Plugin as any) {
     });
 
     this.editor.keystrokes.set('Tab', (data, cancel) => {
-      if (this._areActionsVisible && !this.actionsView.focusTracker.isFocused) {
-        this.actionsView.focus();
+      if (!this.formView.focusTracker.isFocused) {
+        this.formView.focus();
         cancel();
       }
     }, {
-        priority: 'high'
-      });
+      priority: 'high'
+    });
 
     this.editor.keystrokes.set('Esc', (data, cancel) => {
       if (this._isUIVisible) {
@@ -140,23 +129,39 @@ export default class HintUI extends (Plugin as any) {
     const editor = this.editor;
     const formView = new HintFormView(editor.locale);
     const linkCommand = editor.commands.get('addHint');
+    const unlinkCommand = editor.commands.get('deleteHint');
 
-    formView.hintInputView.bind('value').to(linkCommand, 'value');
     formView.editableUiView.render();
 
     // Form elements should be read-only when corresponding commands are disabled.
-    formView.hintInputView.bind('isReadOnly').to(linkCommand, 'isEnabled', value => !value);
     formView.saveButtonView.bind('isEnabled').to(linkCommand);
+    formView.deleteHintButtonView.bind('isEnabled').to(unlinkCommand);
 
     // Execute link command after clicking the "Save" button.
     this.listenTo(formView, 'submit', () => {
-      editor.execute('addHint', formView.hintInputView.inputView.element.value);
+      const text = clearText(formView.editableUiView.editor.getData());
+      if (text.length === 0) {
+        editor.execute('deleteHint');
+        this._hideUI();
+        return;
+      }
+      editor.execute('addHint', formView.editableUiView.editor.getData());
       this._removeFormView();
     });
 
     // Hide the panel after clicking the "Cancel" button.
     this.listenTo(formView, 'cancel', () => {
       this._removeFormView();
+    });
+
+    this.listenTo(formView, 'delete', () => {
+      editor.execute('deleteHint');
+      this._hideUI();
+    });
+
+    formView.keystrokes.set(linkKeystroke, (data, cancel) => {
+      this._addFormView();
+      cancel();
     });
 
     // Close the panel on esc key press when the **form has focus**.
@@ -182,43 +187,6 @@ export default class HintUI extends (Plugin as any) {
     }
   }
 
-  private _createActionsView(): HintActionsView {
-    const editor = this.editor;
-    const actionsView = new HintActionsView(editor.locale);
-    const linkCommand = editor.commands.get('addHint');
-    const unlinkCommand = editor.commands.get('deleteHint');
-
-    debugger
-    actionsView.bind('title').to(linkCommand, 'value');
-    actionsView.editButtonView.bind('isEnabled').to(linkCommand);
-    actionsView.unlinkButtonView.bind('isEnabled').to(unlinkCommand);
-
-    // Execute unlink command after clicking on the "Edit" button.
-    this.listenTo(actionsView, 'edit', () => {
-      this._addFormView();
-    });
-
-    // Execute unlink command after clicking on the "Unlink" button.
-    this.listenTo(actionsView, 'deleteHint', () => {
-      editor.execute('deleteHint');
-      this._hideUI();
-    });
-
-    // Close the panel on esc key press when the **actions have focus**.
-    actionsView.keystrokes.set('Esc', (data, cancel) => {
-      this._hideUI();
-      cancel();
-    });
-
-    // Open the form view on Ctrl+K when the **actions have focus**..
-    actionsView.keystrokes.set(linkKeystroke, (data, cancel) => {
-      this._addFormView();
-      cancel();
-    });
-
-    return actionsView;
-  }
-
   _addFormView() {
     if (this._isFormInPanel) {
       return;
@@ -232,20 +200,7 @@ export default class HintUI extends (Plugin as any) {
       position: this._getBalloonPositionData()
     });
 
-    this.formView.hintInputView.select();
-
-    this.formView.hintInputView.inputView.element.value = linkCommand.value || '';
-  }
-
-  _addActionsView() {
-    if (this._areActionsInPanel) {
-      return;
-    }
-
-    this._balloon.add({
-      view: this.actionsView,
-      position: this._getBalloonPositionData()
-    });
+    this.formView.editableUiView.editor.setData(linkCommand.value || '');
   }
 
   _getBalloonPositionData() {
@@ -291,28 +246,12 @@ export default class HintUI extends (Plugin as any) {
   _showUI() {
     const editor = this.editor;
     const linkCommand = editor.commands.get('addHint');
-    debugger
 
     if (!linkCommand.isEnabled) {
       return;
     }
 
-    // When there's no link under the selection, go straight to the editing UI.
-    if (!this._getSelectedLinkElement()) {
-      this._addActionsView();
-      this._addFormView();
-    }
-    // If theres a link under the selection...
-    else {
-      // Go to the editing UI if actions are already visible.
-      if (this._areActionsVisible) {
-        this._addFormView();
-      }
-      // Otherwise display just the actions UI.
-      else {
-        this._addActionsView();
-      }
-    }
+    this._addFormView();
 
     // Begin responding to ui#update once the UI is added.
     this._startUpdatingUI();
@@ -332,10 +271,6 @@ export default class HintUI extends (Plugin as any) {
       if ((prevSelectedLink && !selectedLink) ||
         (!prevSelectedLink && selectionParent !== prevSelectionParent)) {
         this._hideUI();
-      }
-
-      else {
-        this._balloon.updatePosition(this._getBalloonPositionData());
       }
 
       prevSelectedLink = selectedLink;
@@ -364,9 +299,6 @@ export default class HintUI extends (Plugin as any) {
 
     // Remove form first because it's on top of the stack.
     this._removeFormView();
-
-    // Then remove the actions view because it's beneath the form.
-    this._balloon.remove(this.actionsView);
   }
 
   public findLinkElementAncestor(position) {
@@ -374,7 +306,6 @@ export default class HintUI extends (Plugin as any) {
   }
 
   public isLinkElement(node) {
-    // console.log(node.getCustomProperty('title'));
     return node.is('attributeElement') && !!node.getCustomProperty('addHint');
   }
 

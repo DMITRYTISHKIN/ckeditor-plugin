@@ -3,9 +3,6 @@ import { HINT_MODEL, findHintRange } from './hint.helper';
 import toMap from '@ckeditor/ckeditor5-utils/src/tomap';
 
 export default class HintAddCommand extends (Command as any) {
-  public value;
-  public isEnabled;
-
   constructor(editor) {
     super(editor);
   }
@@ -15,11 +12,10 @@ export default class HintAddCommand extends (Command as any) {
     const doc = model.document;
 
     this.value = doc.selection.getAttribute(HINT_MODEL);
-		this.isEnabled = model.schema.checkAttributeInSelection(doc.selection, HINT_MODEL);
+		this.isEnabled = this.checkIsEnabled(doc.selection, model);
   }
 
   execute(href) {
-    debugger
     const model = this.editor.model;
     const selection = model.document.selection;
 
@@ -49,5 +45,12 @@ export default class HintAddCommand extends (Command as any) {
 				}
       }
     })
+  }
+
+  private checkIsEnabled(selection, model): boolean {
+    return (
+      (selection.hasAttribute('hintContent') || !selection.isCollapsed) &&
+      model.schema.checkAttributeInSelection(selection, HINT_MODEL)
+    );
   }
 }

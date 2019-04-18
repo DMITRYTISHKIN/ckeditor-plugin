@@ -15,10 +15,10 @@ import HintEditorView from './hint-editor.view';
 export default class HintFormView extends (View as any) {
   public focusTracker: FocusTracker;
   public keystrokes: KeystrokeHandler;
-  public hintInputView: LabeledInputView;
   public saveButtonView: ButtonView;
   public cancelButtonView: ButtonView;
   public editableUiView: EditorUIView;
+  public deleteHintButtonView: ButtonView;
 
   private _focusables: ViewCollection;
   private _focusCycler: FocusCycler;
@@ -31,7 +31,6 @@ export default class HintFormView extends (View as any) {
     this.focusTracker = new FocusTracker();
     this.keystrokes = new KeystrokeHandler();
 
-    this.hintInputView = this._createHintInput();
     this.editableUiView = new HintEditorView(this.locale);
     // this.editableUiView.inputView.placeholder = 'Введите текст';
 
@@ -39,6 +38,7 @@ export default class HintFormView extends (View as any) {
     this.saveButtonView.type = 'submit';
 
     this.cancelButtonView = this._createButton(t('Cancel'), 'cancel-hint-icon', 'cancel');
+    this.deleteHintButtonView = this._createButton(t('Delete'), 'delete-hint-icon', 'delete');
 
     this._focusables = new ViewCollection();
 
@@ -62,10 +62,18 @@ export default class HintFormView extends (View as any) {
         tabindex: '-1'
       },
       children: [
-        this.hintInputView,
         this.editableUiView,
-        this.saveButtonView,
-        this.cancelButtonView,
+        this.deleteHintButtonView,
+        {
+          tag: 'div',
+          attributes: {
+            class: 'button-panel'
+          },
+          children: [
+            this.saveButtonView,
+            this.cancelButtonView,
+          ]
+        }
       ]
     });
   }
@@ -78,7 +86,8 @@ export default class HintFormView extends (View as any) {
     });
 
     const childViews = [
-      this.hintInputView,
+      this.editableUiView,
+      this.deleteHintButtonView,
       this.saveButtonView,
       this.cancelButtonView
     ];
@@ -93,17 +102,6 @@ export default class HintFormView extends (View as any) {
 
   focus() {
     this._focusCycler.focusFirst();
-  }
-
-  private _createHintInput(): LabeledInputView {
-    const t = this.locale.t;
-
-    const labeledInput = new LabeledInputView(this.locale, InputTextView);
-
-    labeledInput.label = t('Hint text');
-    labeledInput.inputView.placeholder = 'Введите текст';
-
-    return labeledInput;
   }
 
   private _createButton(label, className, eventName?): ButtonView {

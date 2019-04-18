@@ -1,7 +1,7 @@
 import Plugin from '@ckeditor/ckeditor5-core/src/plugin';
 import bindTwoStepCaretToAttribute from '@ckeditor/ckeditor5-engine/src/utils/bindtwostepcarettoattribute';
 import HintAddCommand from './hint-add.command';
-import { HINT_MODEL, HINT_VIEW, HINT_ATTR, HIGHLIGHT_CLASS, HINT_SYMBOL, findHintRange } from './hint.helper';
+import { HINT_MODEL, HINT_VIEW, HINT_ATTR, HIGHLIGHT_CLASS, findHintRange } from './hint.helper';
 import { HintDeleteComand } from './hint-delete.command';
 import { downcastAttributeToElement } from '@ckeditor/ckeditor5-engine/src/conversion/downcast-converters';
 import { upcastElementToAttribute } from '@ckeditor/ckeditor5-engine/src/conversion/upcast-converters';

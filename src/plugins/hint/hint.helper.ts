@@ -8,6 +8,10 @@ export function findHintRange(position, value, model) {
 	return model.createRange(_findBound(position, value, true, model), _findBound(position, value, false, model));
 }
 
+export function clearText(str) {
+	return str.replace(/<[^<|>]+?>|&nbsp;/gi,'');
+}
+
 function _findBound(position, value, lookBack, model) {
 	let node = position.textNode || (lookBack ? position.nodeBefore : position.nodeAfter);
 

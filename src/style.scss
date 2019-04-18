@@ -25,20 +25,41 @@ html {
   &.cancel-hint-icon {
     background: url(../src/assets/cancel.svg) no-repeat center !important;
   }
+  &.hint-icon {
+    background: url(../src/assets/hint.svg) no-repeat center !important;
+    &.ck-on {
+      background-color: #F2F2F2 !important;
+    }
+  }
   &:not(.ck-disabled):hover {
     background-color: #F2F2F2 !important;
   }
+  &.ck-disabled {
+    opacity: .3;
+  }
+
 }
 .ck-hint {
   border-bottom: 1px dotted #8b8b8b;
 }
 .ck.ck-balloon-panel {
   & .ck.ck-hint-form {
+    min-width: 300px;
     padding: 8px;
     outline: none;
-    text-align: right;
-    & .ck.ck-labeled-input {
-      margin-bottom: 2px;
+    & .button-panel {
+      float: right;
+    }
+    & .hint-editor-container {
+      margin-bottom: 4px;
+      & .ck.ck-content.ck-editor__editable {
+        max-width: 580px;
+        overflow-x: hidden;
+        & * {
+          word-break: break-word;
+          white-space: normal;
+        }
+      }
     }
   }
 

@@ -1,15 +1,18 @@
 import View from '@ckeditor/ckeditor5-ui/src/view';
 import submitHandler from '@ckeditor/ckeditor5-ui/src/bindings/submithandler';
-import ClassicEditor from '@ckeditor/ckeditor5-editor-classic/src/classiceditor';
-import Essentials from '@ckeditor/ckeditor5-essentials/src/essentials';
-import Bold from '@ckeditor/ckeditor5-basic-styles/src/bold';
+import ClassicEditor from '../../build/ckeditor';
 
 export default class HintEditorView extends (View as any) {
+  public editor;
+
   constructor(locale) {
     super(locale);
 
     this.setTemplate({
       tag: 'div',
+      attributes: {
+        class: 'hint-editor-container'
+      },
       children: [{
         tag: 'div',
         attributes: {
@@ -26,17 +29,15 @@ export default class HintEditorView extends (View as any) {
       view: this
     });
 
-    debugger
     ClassicEditor
       .create(this.element.firstElementChild, {
-          plugins: [Essentials, Bold],
-          toolbar: ['bold'],
+        toolbar: ['bulletedList', 'numberedList']
       })
       .then(editor => {
-          console.log('Editor was initialized kek', editor);
+        this.editor = editor;
       })
       .catch(error => {
-          console.error(error.stack);
+        console.error(error.stack);
       });
   }
 
