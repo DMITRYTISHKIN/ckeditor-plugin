@@ -1,6 +1,6 @@
 import View from '@ckeditor/ckeditor5-ui/src/view';
 import submitHandler from '@ckeditor/ckeditor5-ui/src/bindings/submithandler';
-import ClassicEditor from '../../build/ckeditor';
+import ClassicEditor from '../../../build/ckeditor';
 
 export default class HintEditorView extends (View as any) {
   public editor;

@@ -15,7 +15,7 @@ html {
   &.edit-hint-icon {
     background: url(../src/assets/edit.svg) no-repeat center !important;
   }
-  
+
   &.delete-hint-icon {
     background: url(../src/assets/delete.svg) no-repeat center !important;
   }
@@ -72,3 +72,26 @@ html {
   }
 }
 
+
+.info-block {
+  & > div {
+    height: 40px;
+    background-color: aquamarine;
+  }
+}
+.info-block-caption {
+  padding: 8px;
+  line-height: 2rem;
+  display: block !important;
+}
+.info-block-caption.ck-placeholder::before {
+  content: attr(data-placeholder);
+  pointer-events: none;
+  cursor: text;
+  color: black;
+}
+
+
+.ck-editor__nested-editable_focused::before {
+  display: none;
+}
