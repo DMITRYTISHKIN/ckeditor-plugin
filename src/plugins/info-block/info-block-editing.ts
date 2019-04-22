@@ -1,9 +1,9 @@
 import Plugin from "@ckeditor/ckeditor5-core/src/plugin";
 import { downcastElementToElement } from "@ckeditor/ckeditor5-engine/src/conversion/downcast-converters";
-import { upcastElementToElement } from "@ckeditor/ckeditor5-engine/src/conversion/upcast-converters";
 import { toWidget } from "@ckeditor/ckeditor5-widget/src/utils";
 import { toWidgetEditable } from "@ckeditor/ckeditor5-widget/src/utils";
 import { attachPlaceholder } from '@ckeditor/ckeditor5-engine/src/view/placeholder';
+import tableCellPostFixer from './post-fixer';
 
 export default class InfoBlockEditing extends (Plugin as any) {
   constructor(editor) {
@@ -27,11 +27,10 @@ export default class InfoBlockEditing extends (Plugin as any) {
 
     schema.register("info-block-edit", {
       allowIn: 'info-block',
-			allowContentOf: '$block',
       isLimit: true,
     });
 
-    schema.extend( '$block', { allowIn: 'info-block-edit' } )
+    schema.extend('$block', { allowIn: 'info-block-edit' })
 
     conversion.for("dataDowncast").add(
       downcastElementToElement({
@@ -52,19 +51,15 @@ export default class InfoBlockEditing extends (Plugin as any) {
           )
       })
     );
+    conversion.for("upcast").add(this._upcastTable());
 
-    editor.conversion.for( 'upcast' ).add(
-      upcastElementToElement({
-        view: this._matchImageCaption,
-        model: 'info-block-edit'
-      })
-    );
+
 
     const createCaptionForData = writer =>
       writer.createContainerElement("figcaption");
     data.downcastDispatcher.on(
       "insert:info-block-edit",
-      this._captionModelToView(createCaptionForData, false)
+      this._captionModelToView(createCaptionForData, false, false)
     );
 
     const createCaptionForEditing = this._captionElementCreator(
@@ -73,47 +68,92 @@ export default class InfoBlockEditing extends (Plugin as any) {
     );
     editing.downcastDispatcher.on(
       "insert:info-block-edit",
-      this._captionModelToView(createCaptionForEditing)
+      this._captionModelToView(createCaptionForEditing, true, true)
     );
-    conversion.for("upcast").add(this._upcastTable());
 
-    editor.model.document.registerPostFixer( writer => this._tableCellContentsPostFixer( writer, editor.model ) );
+    conversion.for('upcast').add(
+      this.upcastTableCell()
+    );
+
+    editing.view.document.registerPostFixer( writer => tableCellPostFixer( writer, editor.model, editing.mapper, editing.view ) );
+    editor.model.document.registerPostFixer(writer => this._tableCellContentsPostFixer(writer, editor.model));
+
 
   }
 
-  private _tableCellContentsPostFixer( writer, model ) {
+  private upcastTableCell( ) {
+    return dispatcher => {
+      dispatcher.on('element:figcaption', ( evt, data, conversionApi ) => {
+        debugger
+        const viewTableCell = data.viewItem;
+  
+        if ( !conversionApi.consumable.test( viewTableCell, { name: true } ) ) {
+          return;
+        }
+  
+        const tableCell = conversionApi.writer.createElement( 'info-block-edit' );
+  
+        const splitResult = conversionApi.splitToAllowedParent( tableCell, data.modelCursor );
+  
+        if ( !splitResult ) {
+          return;
+        }
+  
+        conversionApi.writer.insert( tableCell, splitResult.position );
+        conversionApi.consumable.consume( viewTableCell, { name: true } );
+  
+        const modelCursor = conversionApi.writer.createPositionAt( tableCell, 0 );
+        conversionApi.convertChildren( viewTableCell, modelCursor );
+        debugger
+        if ( !tableCell.childCount ) {
+          conversionApi.writer.insertElement( 'paragraph', modelCursor );
+        }
+  
+        data.modelRange = conversionApi.writer.createRange(
+          conversionApi.writer.createPositionBefore( tableCell ),
+          conversionApi.writer.createPositionAfter( tableCell )
+        );
+  
+        // Continue after inserted element.
+        data.modelCursor = data.modelRange.end;
+      } );
+    };
+  }
+
+  private _tableCellContentsPostFixer(writer, model) {
     const changes = model.document.differ.getChanges();
 
 
-	let wasFixed = false;
+    let wasFixed = false;
 
-	for ( const entry of changes ) {
-		if ( entry.type == 'remove' && entry.position.parent.is( 'info-block-edit' ) ) {
-			wasFixed = this._fixTableCellContent( entry.position.parent, writer ) || wasFixed;
-		}
+    for (const entry of changes) {
+      if (entry.type == 'remove' && entry.position.parent.is('info-block-edit')) {
+        wasFixed = this._fixTableCellContent(entry.position.parent, writer) || wasFixed;
+      }
 
-		if ( entry.type == 'insert' ) {
-			if ( entry.name == 'info-block-edit' ) {
-				wasFixed = this._fixTableCellContent( entry.position.nodeAfter, writer ) || wasFixed;
-			}
-		}
-	}
+      if (entry.type == 'insert') {
+        if (entry.name == 'info-block-edit') {
+          wasFixed = this._fixTableCellContent(entry.position.nodeAfter, writer) || wasFixed;
+        }
+      }
+    }
 
-	return wasFixed;
+    return wasFixed;
 
   }
 
-  private _fixTableCellContent( tableCell, writer ) {
-    if ( tableCell.childCount == 0 ) {
-      writer.insertElement( 'paragraph', tableCell );
+  private _fixTableCellContent(tableCell, writer) {
+    debugger
+    if (tableCell.childCount == 0) {
+      writer.insertElement('paragraph', tableCell);
 
       return true;
     }
 
-    const textNodes = Array.from( tableCell.getChildren() ).filter( (child: any) => child.is( 'text' ) );
+    const textNodes = Array.from(tableCell.getChildren()).filter((child: any) => child.is('text'));
 
-    for ( const child of textNodes ) {
-      writer.wrap( writer.createRangeOn( child ), 'paragraph' );
+    for (const child of textNodes) {
+      writer.wrap(writer.createRangeOn(child), 'paragraph');
     }
 
     return !!textNodes.length;
@@ -122,10 +162,10 @@ export default class InfoBlockEditing extends (Plugin as any) {
   private _toImageWidget(viewElement, writer, label) {
     writer.setCustomProperty("info-block", true, viewElement);
 
-    return toWidget(viewElement, writer, { label: label });
+    return toWidget(viewElement, writer, { hasSelectionHandler: true });
   }
 
-  private _captionModelToView(elementCreator, hide = true) {
+  private _captionModelToView(elementCreator, hide = true, isWidget) {
     return (evt, data, conversionApi) => {
       const captionElement = data.item;
 
@@ -153,7 +193,8 @@ export default class InfoBlockEditing extends (Plugin as any) {
         viewCaption,
         data.item,
         viewImage,
-        conversionApi
+        conversionApi,
+        isWidget
       );
     };
   }
@@ -166,28 +207,39 @@ export default class InfoBlockEditing extends (Plugin as any) {
     return figure;
   }
 
-  private _matchImageCaption( element ) {
-    const parent = element.parent;
+  private _insertViewCaptionAndBind(viewCaption, modelCaption, viewImage, conversionApi, isWidget) {
+    const viewPosition = conversionApi.writer.createPositionAt(viewImage, 'end');
 
-    if ( element.name == 'figcaption' && parent && parent.name == 'figure') {
-      return { name: true };
+    // as widget
+    const innerParagraph = modelCaption.getChild( 0 );
+    const isSingleParagraph = modelCaption.childCount === 1 && innerParagraph.name === 'paragraph';
+    conversionApi.writer.insert(viewPosition, viewCaption);
+
+    if (isSingleParagraph) {
+      const paragraphInsertPosition = conversionApi.writer.createPositionAt(viewCaption, 'end');
+      conversionApi.consumable.consume( innerParagraph, 'insert' );
+
+      if (isWidget) {
+        const fakeParagraph = conversionApi.writer.createContainerElement( 'span' );
+
+        conversionApi.mapper.bindElements( innerParagraph, fakeParagraph );
+        conversionApi.writer.insert( paragraphInsertPosition, fakeParagraph );
+
+        conversionApi.mapper.bindElements(modelCaption, viewCaption);
+      } else {
+        conversionApi.mapper.bindElements(modelCaption, viewCaption);
+        conversionApi.mapper.bindElements( innerParagraph, viewCaption );
+      }
+    } else {
+      conversionApi.mapper.bindElements(modelCaption, viewCaption);
     }
-
-    return null;
-  }
-
-  private _insertViewCaptionAndBind( viewCaption, modelCaption, viewImage, conversionApi ) {
-    const viewPosition = conversionApi.writer.createPositionAt( viewImage, 'end' );
-
-    conversionApi.writer.insert( viewPosition, viewCaption );
-    conversionApi.mapper.bindElements( modelCaption, viewCaption );
+  
+    
   }
 
   private _captionElementCreator(view, placeholderText) {
     return writer => {
       const editable = writer.createEditableElement("figcaption", { class: 'info-block-caption' });
-      writer.setCustomProperty("imageCaption", true, editable);
-
       attachPlaceholder(
         view,
         editable,
@@ -228,10 +280,11 @@ export default class InfoBlockEditing extends (Plugin as any) {
         const modelCursor = conversionApi.writer.createPositionAt(block, 0);
         conversionApi.convertChildren(viewTable, modelCursor);
 
-
+        debugger
         if (!viewTable.childCount) {
-          conversionApi.writer.insertElement("info-block-edit", modelCursor);
-
+          const tableCell = conversionApi.writer.createElement("info-block-edit");
+          conversionApi.writer.insertElement( 'paragraph', tableCell );
+          conversionApi.writer.insert( tableCell, modelCursor );
         }
 
         data.modelRange = conversionApi.writer.createRange(
@@ -250,4 +303,16 @@ export default class InfoBlockEditing extends (Plugin as any) {
       });
     };
   }
+}
+
+export function findAncestor( parentName, position ) {
+	let parent = position.parent;
+
+	while ( parent ) {
+		if ( parent.name === parentName ) {
+			return parent;
+		}
+
+		parent = parent.parent;
+	}
 }

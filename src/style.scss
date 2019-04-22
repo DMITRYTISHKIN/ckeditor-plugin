@@ -8,6 +8,10 @@ $blue: blue;
   width: auto;
 }
 
+.ck.ck-content.ck-editor__editable {
+  padding: 8px 12px;
+}
+
 html {
   padding: 10px;
 }
@@ -30,6 +34,9 @@ html {
     &.ck-on {
       background-color: #F2F2F2 !important;
     }
+  }
+  &.info-block-icon {
+    background: url(../src/assets/info-block.svg) no-repeat center !important;
   }
   &:not(.ck-disabled):hover {
     background-color: #F2F2F2 !important;
@@ -74,15 +81,23 @@ html {
 
 
 .info-block {
-  & > div {
-    height: 40px;
-    background-color: aquamarine;
-  }
+  background-color: #FDEEF9;
+  border-radius: 6px;
+  float: right;
+  min-width: 400px;
+  margin: 0;
 }
 .info-block-caption {
-  padding: 8px;
-  line-height: 2rem;
+  padding: 0 12px;
+  background-color: #FDEEF9;
   display: block !important;
+  border-radius: 6px;
+  &:focus {
+    background-color: #FDEEF9 !important;
+  }
+  & strong {
+    color: #CB11AB;
+  }
 }
 .info-block-caption.ck-placeholder::before {
   content: attr(data-placeholder);
